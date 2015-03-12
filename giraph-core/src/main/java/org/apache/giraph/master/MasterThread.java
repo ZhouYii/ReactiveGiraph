@@ -25,11 +25,14 @@ import org.apache.giraph.bsp.SuperstepState;
 import org.apache.giraph.counters.GiraphTimers;
 import org.apache.giraph.graph.Computation;
 import org.apache.giraph.metrics.GiraphMetrics;
+import org.apache.giraph.worker.WorkerInfo;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.log4j.Logger;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -153,8 +156,23 @@ public class MasterThread<I extends WritableComparable, V extends Writable,
               */
             if (superstepState == SuperstepState.WORKER_FAILURE) {
                 // Need to get list of dead workers.
+                // superstepChosenWorkerAlive function can calculate this.
+                String healthyWorkerInfoPath =
+                        BspService.getWorkerInfoHealthyPath(getApplicationAttempt(), getSuperStep());
+                String unhealthyWorkerInfoPath =
+                        getWorkerInfoUnhealthyPath(getApplicationAttempt(), getSuperStep());
+                List<WorkerInfo> chosenWorkerInfoList = checkWorkers();
+                Collection<WorkerInfo> deadworkers = superstepChosenWorkerAlive(unhealthyWorkerInfoPath, chosenWorkerInfoList) ;
+
+                // replace the dead workers with new workers:
+                // for each dead worker,
+                // 1) get a vertex range.
+                // 2) broadcast a message to heathy servers to get messages sent by dead worker
+                // 3) infer the state of the dead worker vertices from the retrieved messages
+              /* Do not checkpoint.
               bspServiceMaster.restartFromCheckpoint(
                   bspServiceMaster.getLastGoodCheckpoint());
+              */
             }
             endMillis = System.currentTimeMillis();
           }

@@ -1315,74 +1315,6 @@ public class BspServiceMaster<I extends WritableComparable,
     return lastCheckpointedSuperstep;
   }
 
-    /**
-     * Wait for a set of workers to signal that they are done with the
-     * barrier.
-     *
-     * @param finishedWorkerPath Path to where the workers will register their
-     *        hostname and id
-     * @param workerInfoList List of the workers to wait for
-     * @param event Event to wait on for a chance to be done.
-     * @param ignoreDeath In case if worker died after making it through
-     *                    barrier, we will ignore death if set to true.
-     * @return True if barrier was successful, false if there was a worker
-     *         failure
-     */
-    private boolean getDeadWorkersList(String finishedWorkerPath,
-                                       List<WorkerInfo> workerInfoList,
-                                       BspEvent event,
-                                       boolean ignoreDeath) {
-        /*
-        try {
-            getZkExt().createOnceExt(finishedWorkerPath,
-                    null,
-                    Ids.OPEN_ACL_UNSAFE,
-                    CreateMode.PERSISTENT,
-                    true);
-        } catch (KeeperException e) {
-            throw new IllegalStateException(
-                    "barrierOnWorkerList: KeeperException - Couldn't create " +
-                            finishedWorkerPath, e);
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(
-                    "barrierOnWorkerList: InterruptedException - Couldn't create " +
-                            finishedWorkerPath, e);
-        } */
-
-        List<String> hostnameIdList =
-                new ArrayList<String>(workerInfoList.size());
-        for (WorkerInfo workerInfo : workerInfoList) {
-            hostnameIdList.add(workerInfo.getHostnameId());
-        }
-        String workerInfoHealthyPath =
-                getWorkerInfoHealthyPath(getApplicationAttempt(), getSuperstep());
-
-        List<String> finishedHostnameIdList;
-        long nextInfoMillis = System.currentTimeMillis();
-        final int defaultTaskTimeoutMsec = 10 * 60 * 1000;  // from TaskTracker
-        final int taskTimeoutMsec = getContext().getConfiguration().getInt(
-                "mapred.task.timeout", defaultTaskTimeoutMsec);
-        List<WorkerInfo> deadWorkers = new ArrayList<>();
-
-        // Did a worker die?
-        try {
-            deadWorkers.addAll(
-                    superstepChosenWorkerAlive(
-                            workerInfoHealthyPath,
-                            workerInfoList));
-            } catch (KeeperException e) {
-                throw new IllegalStateException(
-                        "barrierOnWorkerList: KeeperException - " +
-                                "Couldn't get " + workerInfoHealthyPath, e);
-            } catch (InterruptedException e) {
-                throw new IllegalStateException(
-                        "barrierOnWorkerList: InterruptedException - " +
-                                "Couldn't get " + workerInfoHealthyPath, e);
-            }
-
-        return true;
-    }
-
   /**
    * Wait for a set of workers to signal that they are done with the
    * barrier.
@@ -2011,6 +1943,7 @@ public class BspServiceMaster<I extends WritableComparable,
   public void postSuperstep() {
     for (MasterObserver observer : observers) {
       observer.postSuperstep(getSuperstep());
+
       getContext().progress();
     }
   }
